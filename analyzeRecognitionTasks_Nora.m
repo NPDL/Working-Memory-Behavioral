@@ -11,6 +11,10 @@
 
 clear all;
 load('allData_28-Aug-2018 11:27:13.mat')
+load('writeToFile') % specifies if you want what is output to command window to be saved to text file
+if writeToFile
+    diary('outputsRecognitionAnalysis')
+end
 %% Clean/reshape data and merge together
 
 % A short history of this data set and what needs to be corrected
@@ -131,7 +135,7 @@ set(groot,'DefaultAxesTitleFontSize',1)
 set(groot,'DefaultLineMarkerSize',10)
 set(groot,'DefaultLineLineWidth',2)
 color = [244 140 66;66 119 244]./255; %s is first row (orange) , cb is second row (blue) 
-
+addpath('~/Desktop/Work/Research/WM/PlottingFunctions') % access the plotting functions I wrote
 %% Calculate averages across subjects (within groups), standard deviation, and ci 
 
 %%% Performance Across Spans %%%
@@ -139,6 +143,22 @@ color = [244 140 66;66 119 244]./255; %s is first row (orange) , cb is second ro
 % Calc Stats %
 [statPerSpan(1)] = descStats(intraSubAvg.S(subjects{1},:,:));
 [statPerSpan(2)] = descStats(intraSubAvg.CB(subjects{2},:,:));
+
+% Display to the command window 
+disp('Stats for performance separated by span')
+disp('Span increases from left to right - Non-Verbal: 3-6, Verbal Spans: 5-8')
+fieldNames = fieldnames(statPerSpan);
+for task=1:2
+    disp(taskNames{task})
+    for s = 1:length(fieldNames)
+        disp(fieldNames{s})
+        for group = 1:2
+            disp(vision{group})
+            dataToDisplay = getfield(statPerSpan,{group},fieldNames{s},{1,1:4,task});
+            disp(num2str(dataToDisplay))
+        end
+    end
+end
 
 % Plot Data %
 spans(1,:) = 3:6; spans(2,:) = 5:8; 
@@ -165,6 +185,7 @@ end % for plt
 % T-Test for nonverbal and verbal
 [h,p,~,stats] = ttest2(intraSubAvg.S(subjects{1},:,:), intraSubAvg.CB(subjects{2},:,:));
 
+disp('Do a T-Test to compare verbal and non-verbal across all spans:')
 for t = 1:2 % loop through tasks
     sigSpan = h(:,:,t)==1; 
     disp(titles{t})
@@ -178,6 +199,23 @@ end
 % Calc Stats %
 [statOverall(1)] = descStats(squeeze(mean(intraSubAvg.S(subjects{1},:,:),2)));
 [statOverall(2)] = descStats(squeeze(mean(intraSubAvg.CB(subjects{2},:,:),2)));
+
+% Display the Results 
+disp('These are the descriptive stats for overall performance analysis')
+fieldNames = fieldnames(statOverall);
+for task = 1:2 % nonverbal = 1 verbal = 2
+    disp(taskNames{task})
+    for s = 1:length(fieldNames) % loop through fields which are different tasks
+        disp(fieldNames{s})
+        for group = 1:2 % sighted = 1 blind = 2
+            dataToDisplay(group) = getfield(statOverall,{group},fieldNames{s},{task}); % select the struct at index group of the struct array statOverll
+            % then select the fieldname specified by fieldNames{s}, select
+            % the index task from the field called fieldNames{s}
+        end
+        disp(vision)
+        disp(num2str(dataToDisplay))
+    end
+end
 
 % Plot the Data %
 figure;
@@ -207,6 +245,26 @@ disp(['P-value: ', num2str(p(h==1)), ' T-value: ', num2str(stats.tstat(h==1))])
 [statMistake(1)] = descStats(lureCounts.S(subjects{1},:,5:6));
 [statMistake(2)] = descStats(lureCounts.CB(subjects{2},:,5:6));
 
+% Display the Results 
+disp(' These are the descriptive stats for the analysis of the mistakes')
+disp('The mistakes are counts no proportions')
+disp('The first row are the sighted. The second is the blind')
+fieldNames = fieldnames(statMistake(1));
+clear dataToDisplay
+for task = 1:2 % nonverbal = 1 verbal = 2
+    disp(taskNames{task})
+    for s = 1:length(fieldNames) % loop through fields which are different tasks
+        disp(fieldNames{s})
+        for group = 1:2 % sighted = 1 blind = 2
+            dataToDisplay(group,:) = getfield(statMistake,{group},fieldNames{s},{1,1:5,task}); % select the struct at index group of the struct array statOverll
+            % then select the fieldname specified by fieldNames{s}, select
+            % the index task from the field called fieldNames{s}
+        end
+        disp(lureTypes)
+        disp(num2str(dataToDisplay))
+    end
+end
+
 figure;
 for plt = 1:2 % loop through tasks to plot
     subplot(1,2,plt)
@@ -227,13 +285,41 @@ end
 
 %%% Statistical Testing %%%
 [h,p,~,stats] = ttest2(lureCounts.S(subjects{1},:,5:6),lureCounts.CB(subjects{2},:,5:6)); 
+for task = 1:2
+    disp(['Doing a t-test on ' taskNames{task},': LureCounts'])
+    disp('The statistics for each type of lure are presented in this order:')
+    disp(lureTypes)
+    disp(['P-values: ', num2str(p(:,:,task))])
+    disp(['T-values: ', num2str(stats.tstat(:,:,task))])
+end
 
 %%% Oversensitive vs. Undersensitive %%% 
+
+% calculate rates for confusion matrix 
 avgSense(:,:,:,1) = squeeze(mean(sensitivites.S(:,:,subjects{1},:),3));
 avgSense(:,:,:,2) = squeeze(mean(sensitivites.CB(:,:,subjects{2},:),3));
 
+% display the results
+disp('These are the matrices for hits, false negatives, false alarams, and correct rejection')
+disp('The first row are hits and then false negatives')
+disp('The second row are false alarms and then correct rejections')
+for task = 1:2
+    disp(taskNames{task})
+    for group = 1:2
+        disp(vision{group})
+        disp(num2str(avgSense(:,:,task,group)))
+    end
+end
+
 clear h p
-[h,p] = ttest2(sensitivites.S(1,1,subjects{1},2),sensitivites.CB(1,1,subjects{2},2))
+[h,p,~,stat] = ttest2(sensitivites.S(1,1,subjects{1},2),sensitivites.CB(1,1,subjects{2},2));
+if h == 1
+    disp('There is a signifigant difference in hit rates')
+else 
+    disp('There is no signifigant difference in hit rates')
+end
+disp(['Pvalue: ', num2str(p)]) 
+disp(['Tvalue: ', num2str(stat.tstat)])
 
 xlabels={'True Match' ,'True NonMatch'}; ylabels={'Chose Match' ,'Chose NonMatch'};
 figure
@@ -250,6 +336,7 @@ end
 %initialize d prime mat to fill
 dPrime = nan(2,25,2); % Group X Subjects in Group X Task
 
+% Calculate dPrime
 for v =1:2 % loop through group
     for t = 1:2 % loop through task
         hRate = eval(['squeeze(sensitivites.', vision{v},'(1,1,subjects{v},t));']); % hits
@@ -355,4 +442,44 @@ end
 
 % Run the 3 way anova 
 [p,tbl,stats] = anovan(Y,{group,task,span},'model','full','varnames',{'group','task','span'});
+disp('Results of Anova: Group(2) X Task(2) X Span(3)')
+disp(tbl)
 %% Do correlation between discern pair performance and overall performance on each recognition task 
+clear load p % clear variable so can use fucntion
+% load discern pair data  for correlation 
+load('discernPairsOverallPerf.mat')
+
+% do separate correlations and plotting per group
+for task = 1:2
+    [rho(1,task),p(1,task)] = corr(squeeze(mean(intraSubAvg.S(subjects{1},:,task),2)), overallPerf(1,subjects{1})');
+    [rho(2,task),p(2,task)] = corr(squeeze(mean(intraSubAvg.CB(subjects{2},:,task),2)), overallPerf(2,subjects{2})');
+end
+
+% display results
+disp('Pearson correlation between overall performance on recognition tasks and performance on discern pairs')
+disp('The first row are the sighted. The second are the blind')
+disp('The first column is non-verbal performance. The second is verbal')
+disp('Rho: ')
+disp(num2str(rho))
+disp('P-value')
+disp(num2str(p))
+
+figure
+for plt = 1:2 % a subplot for nonverbal and verbal
+    subplot(1,2,plt)
+    hold on
+    plot(squeeze(mean(intraSubAvg.S(subjects{1},:,plt),2)),overallPerf(1,subjects{1})','o','MarkerEdgeColor',color(1,:))
+    plot(squeeze(mean(intraSubAvg.CB(subjects{2},:,plt),2)),overallPerf(2,subjects{2})','o','MarkerEdgeColor',color(2,:))
+    
+    hlines=lsline; % weirdness with lsline
+    hlines=fliplr(hlines); % need to flip it
+    for k = 1:numel(hlines) % then set the colors by hand, argh
+        set(hlines(k),'Color',color(k,:))
+    end 
+    xlabel('Recognition Performance'); ylabel('Discern Pairs Performance')
+end
+
+%% End script and turn off diary if writing to text file
+if writeToFile
+    diary off
+end
