@@ -10,6 +10,7 @@
 % from nonverbal discern pairs task as a control 
 
 clear all;
+addpath('~/Desktop/Work/Research/WM') % access files outside this subfolder
 load('allData_28-Aug-2018 11:27:13.mat')
 load('writeToFile') % specifies if you want what is output to command window to be saved to text file
 if writeToFile
@@ -23,15 +24,15 @@ end
 % 2016, participants were stopped following a span in which their
 % performance was below 50%. The spans went from 3 to 15 for nonverbal and
 % 5 to 15 for verbal. In 2018, the spans were trimed to 3 to 6 for
-% nonverbal and 5 to 8 for verbal. 
+% nonverbal and 5 to 8 for verbal.
 
 %%% Initialize Important Variables %%%
 
 subjects{1} = [1:10 12:23]; %S subjects, eliminated o w/o critical tasks
 subjects{2} = [1:2 4:5 7:10 13:16 18:25]; %CB subjects, eliminated ones w/o critical tasks
-N = cellfun(@(x) length(x), subjects); % find number of subjects in each group 
+N = cellfun(@(x) length(x), subjects); % find number of subjects in each group
 
-toKeepNumer = [10,13]; % columns of numeric data we want to keep from the raw data files 
+toKeepNumer = [10,13]; % columns of numeric data we want to keep from the raw data files
 %  13 = correct/not correct answer
 toKeepNonNumer = [11]; % same as above but with non-numeric data, lure type per trial
 vision = {'S', 'CB'};  % our two groups
@@ -44,72 +45,75 @@ spanOutBounds = zeros(2,2,6);
 
 %%% Loop through groups, subjects, and tasks to compile data %%%
 
-% should be 32 trials total 
-for v = 1:length(subjects) % loop through our two groups 
+% should be 32 trials total
+for v = 1:length(subjects) % loop through our two groups
     for su = subjects{v} % loop through the subjects within the current group
         for task = 5:6 % loop through our two tasks: nonverbal & verbal recognition
             clear tempMat cellMatNonNumer
             % first make a cell array of the columns we want
-             tempMat(:,1) = eval(['cell2mat(',vision{v},'Data(',num2str(task),').su',num2str(su),'(:,toKeepNumer(1)))']);
-             tempMat(:,2) = eval(['cell2mat(',vision{v},'Data(',num2str(task),').su',num2str(su),'(:,toKeepNumer(2)))']);
-             cellMatNonNumer = eval([vision{v},'Data(',num2str(task),').su',num2str(su),'(:,toKeepNonNumer)']);
-             % then convert to a matrix of type double 
-              
-             if size(tempMat,1) < 32 % need to zero pad if reached less than span 6/8
-                 % get sensitivity measures before zero padding
-                 criteraConfusionMat = [1 1;1 0;0 0;0 1]; % hits, false negatives, false alarms, correct rejection
-                 [tf, index] = ismember(tempMat, criteraConfusionMat, 'rows');  % find them
-                 conMat = arrayfun(@(x) sum(ismember(index,x)),1:4);  % count them up for confusionMatrix
-                 nTrueMatches = sum(conMat(1:2)); nTrueNonMatches = sum(conMat(3:4));
-                 conMat = conMat./[nTrueMatches nTrueMatches nTrueNonMatches nTrueNonMatches]; % get a frequency, divide false alarms and hits by (false alarms + hits) and
-                 conMat = reshape(conMat,2,2); % reshape from vector to matrix
-                 eval(['sensitivites.', vision{v}, '(:,:,su,task)= conMat;']) % save data
-                 
+            tempMat(:,1) = eval(['cell2mat(',vision{v},'Data(',num2str(task),').su',num2str(su),'(:,toKeepNumer(1)))']);
+            tempMat(:,2) = eval(['cell2mat(',vision{v},'Data(',num2str(task),').su',num2str(su),'(:,toKeepNumer(2)))']);
+            cellMatNonNumer = eval([vision{v},'Data(',num2str(task),').su',num2str(su),'(:,toKeepNonNumer)']);
+            % then convert to a matrix of type double
+            
+            if size(tempMat,1) < 32 % need to zero pad if reached less than span 6/8
+                disp([vision{v},num2str(su), ' needed to zero pad'])
+                % get sensitivity measures before zero padding
+                criteraConfusionMat = [1 1;1 0;0 0;0 1]; % hits, false negatives, false alarms, correct rejection
+                [tf, index] = ismember(tempMat, criteraConfusionMat, 'rows');  % find them
+                conMat = arrayfun(@(x) sum(ismember(index,x)),1:4);  % count them up for confusionMatrix
+                nTrueMatches = sum(conMat(1:2)); nTrueNonMatches = sum(conMat(3:4));
+                conMat = conMat./[nTrueMatches nTrueMatches nTrueNonMatches nTrueNonMatches]; % get a frequency
+                conMat = reshape(conMat,2,2); % reshape from vector to matrix
+                eval(['sensitivites.', vision{v}, '(:,:,su,task)= conMat;']) % save data
+                
                 % Numeric Data
                 numRowsAdd = 32 - length(tempMat);
                 rowsToAdd= [ones(numRowsAdd,1).*[-1 0.5]];
                 tempMat = [tempMat; rowsToAdd];
                 
                 % Non-numeric Data
-                cellsToAdd = cell(1,numRowsAdd); 
+                cellsToAdd = cell(1,numRowsAdd);
                 cellsToAdd(:,:) = {'NotReached'};
                 cellMatNonNumer = [cellMatNonNumer ;cellsToAdd'];
                 
-                % update counts 
-                spanOutBounds(1,v,task) = spanOutBounds(1,v,task) + 1; 
-             elseif size(tempMat,1) > 32 % need to trim the data if went beyond span 6/8 
-                tempMat = tempMat(1:32,:);
-                cellMatNonNumer = cellMatNonNumer(1:32); 
-                % update counts 
-                spanOutBounds(2,v,task) = spanOutBounds(2,v,task) + 1; 
+                % update counts
+                spanOutBounds(1,v,task) = spanOutBounds(1,v,task) + 1;
+            elseif size(tempMat,1) > 32 % need to trim the data if went beyond span 6/8
+                disp([vision{v},num2str(su), ' needed to trim'])
+                % get sensitivity measures before trimming
+                criteraConfusionMat = [1 1;1 0;0 0;0 1]; % hits, false negatives, false alarms, correct rejection
+                [tf, index] = ismember(tempMat, criteraConfusionMat, 'rows');  % find them
+                conMat = arrayfun(@(x) sum(ismember(index,x)),1:4);  % count them up for confusionMatrix
+                nTrueMatches = sum(conMat(1:2)); nTrueNonMatches = sum(conMat(3:4));
+                conMat = conMat./[nTrueMatches nTrueMatches nTrueNonMatches nTrueNonMatches]; % get a frequency, divide false alarms and hits by (false alarms + hits) and
+                conMat = reshape(conMat,2,2); % reshape from vector to matrix
+                eval(['sensitivites.', vision{v}, '(:,:,su,task)= conMat;']) % save data
                 
-             % get sensitivity measures before zero padding
-              criteraConfusionMat = [1 1;1 0;0 0;0 1]; % hits, false negatives, false alarms, correct rejection
-              [tf, index] = ismember(tempMat, criteraConfusionMat, 'rows');  % find them
-              conMat = arrayfun(@(x) sum(ismember(index,x)),1:4);  % count them up for confusionMatrix
-              nTrueMatches = sum(conMat(1:2)); nTrueNonMatches = sum(conMat(3:4));
-              conMat = conMat./[nTrueMatches nTrueMatches nTrueNonMatches nTrueNonMatches]; % get a frequency, divide false alarms and hits by (false alarms + hits) and 
-              conMat = reshape(conMat,2,2); % reshape from vector to matrix 
-              eval(['sensitivites.', vision{v}, '(:,:,su,task)= conMat;']) % save data
-             elseif size(tempMat,1) == 32
-              % get sensitivity measures before zero padding
-              criteraConfusionMat = [1 1;1 0;0 0;0 1]; % hits, false negatives, false alarms, correct rejection
-              [tf, index] = ismember(tempMat, criteraConfusionMat, 'rows');  % find them
-              conMat = arrayfun(@(x) sum(ismember(index,x)),1:4);  % count them up for confusionMatrix
-              nTrueMatches = sum(conMat(1:2)); nTrueNonMatches = sum(conMat(3:4));
-              conMat = conMat./[nTrueMatches nTrueMatches nTrueNonMatches nTrueNonMatches]; % get a frequency, divide false alarms and hits by (false alarms + hits) and 
-              conMat = reshape(conMat,2,2); % reshape from vector to matrix 
-              eval(['sensitivites.', vision{v}, '(:,:,su,task)= conMat;']) % save data   
-             end
-            % Now average across each span 
+                tempMat = tempMat(1:32,:);
+                cellMatNonNumer = cellMatNonNumer(1:32);
+                % update counts
+                spanOutBounds(2,v,task) = spanOutBounds(2,v,task) + 1;
+            elseif size(tempMat,1) == 32
+                disp([vision{v},num2str(su), ' perfect size'])
+                % get sensitivity measures before zero padding
+                criteraConfusionMat = [1 1;1 0;0 0;0 1]; % hits, false negatives, false alarms, correct rejection
+                [tf, index] = ismember(tempMat, criteraConfusionMat, 'rows');  % find them
+                conMat = arrayfun(@(x) sum(ismember(index,x)),1:4);  % count them up for confusionMatrix
+                nTrueMatches = sum(conMat(1:2)); nTrueNonMatches = sum(conMat(3:4));
+                conMat = conMat./[nTrueMatches nTrueMatches nTrueNonMatches nTrueNonMatches]; % get a frequency, divide false alarms and hits by (false alarms + hits) and
+                conMat = reshape(conMat,2,2); % reshape from vector to matrix
+                eval(['sensitivites.', vision{v}, '(:,:,su,task)= conMat;']) % save data
+            end
+            % Now average across each span
             n=8;
-            averages = arrayfun(@(i) mean(tempMat(i:i+n-1,2)),... % averages is a cell array 
+            averages = arrayfun(@(i) mean(tempMat(i:i+n-1,2)),... % averages is a cell array
                 1:n:length(tempMat)-n+1,'UniformOutput', false);
             % convert to matrix from cell array
             averages = cell2mat(averages);
             % if performance is below 0.5 for a certain span then set to
-            % 0.5 
-            averages(averages < 0.5) = 0.5; 
+            % 0.5
+            averages(averages < 0.5) = 0.5;
             %save to giant data matrix that will be a part of a structure
             eval(['intraSubAvg.', vision{v},'(',num2str(su),',:,', num2str(task),') = averages;']);
             
@@ -122,12 +126,12 @@ for v = 1:length(subjects) % loop through our two groups
             eval(['lureCounts.', vision{v},'(',num2str(su),',:,', num2str(task),') = getCounts;']);
         end
     end
-end 
-% delete unnecessary empty space 
-intraSubAvg.S = intraSubAvg.S(:,:,5:6); 
-intraSubAvg.CB = intraSubAvg.CB(:,:,5:6); 
-sensitivites.S=sensitivites.S(:,:,:,5:6); 
-sensitivites.CB=sensitivites.CB(:,:,:,5:6); 
+end
+% delete unnecessary empty space
+intraSubAvg.S = intraSubAvg.S(:,:,5:6);
+intraSubAvg.CB = intraSubAvg.CB(:,:,5:6);
+sensitivites.S=sensitivites.S(:,:,:,5:6);
+sensitivites.CB=sensitivites.CB(:,:,:,5:6);
 %% %% Set default settings for plotting 
 % Because i am lazy and don't wanna set this every time
 set(groot,'DefaultAxesFontSize',16)
@@ -478,6 +482,7 @@ for plt = 1:2 % a subplot for nonverbal and verbal
     end 
     xlabel('Recognition Performance'); ylabel('Discern Pairs Performance')
 end
+
 
 %% End script and turn off diary if writing to text file
 if writeToFile
