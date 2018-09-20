@@ -1,0 +1,77 @@
+These are the results of correlating (pearson correlation) forward recall performance with backward recall performance:
+The first row is for sighted. The second is for blind. 
+The first column is for % positions correct. The second is for % letters correct
+Rho:
+0.46105     0.43659
+0.31376    0.091846
+P-values:
+0.035416    0.047841
+ 0.17794     0.70015
+%Q: The next few lines are code. Please write txt files that only contain output and not code. That will give me less to keep track of.
+{Undefined function or variable 'h'.
+
+Error in <a href="matlab:matlab.internal.language.introspective.errorDocCallback('analyzeAcrossTasks', '/Users/noraharhen/Desktop/Work/Research/WM/analyzeAcrossTasks.m', 148)" style="font-weight:bold">analyzeAcrossTasks</a> (<a href="matlab: opentoline('/Users/noraharhen/Desktop/Work/Research/WM/analyzeAcrossTasks.m',148,0)">line 148</a>)
+if sum(h) == 1
+} 
+opentoline('/Users/noraharhen/Desktop/Work/Research/WM/analyzeAcrossTasks.m',148,0)
+if sum(hDiff) == 1
+    disp('No signifigant difference in effect of manipulation for either positions correct or letters correct')
+else
+    disp('These was a signifigant difference of the effect of manipulation on these measures:')
+    disp(measures(hDiff==1)) % display name of measure
+    disp(num2str(pDiff(hDiff==1))) % display p-value 
+    disp(num2str(statDiff.tstat(hDiff==1))) % display t-value 
+end
+These was a signifigant difference of the effect of manipulation on these measures:
+%Q: What measures and groups are you referring to in ln 25: % positions and % letters correct for sighted?
+
+%%% Simple and Complex Recall %%%
+tasks = {'forward', 'backward'};
+for t = 1:2
+    disp(['These are the results of correlating (pearson correlation) simple ', tasks{t} ' recall' ...
+        'performance with complex recall performance:'])
+    disp('The first row is for sighted. The second is for blind. ')
+    disp('The first column is for % positions correct. The second is for % letters correct')
+    disp('Rho:')
+    disp(num2str(rhoMixRecall(:,:,t)))
+    disp('P-values:')
+    disp(num2str(pMixRecall(:,:,t)))
+end
+These are the results of correlating (pearson correlation) simple forward recallperformance with complex recall performance:
+The first row is for sighted. The second is for blind. 
+The first column is for % positions correct. The second is for % letters correct
+Rho:
+0.42025     0.58969
+0.46882     0.36637
+P-values:
+0.057853   0.0049012
+ 0.03706     0.11211
+These are the results of correlating (pearson correlation) simple backward recallperformance with complex recall performance:
+The first row is for sighted. The second is for blind. 
+The first column is for % positions correct. The second is for % letters correct
+Rho:
+0.36142     0.55093
+ 0.4194     0.36801
+P-values:
+ 0.10745   0.0096422
+0.065652      0.1104
+
+%%% Recognition %%%
+disp(['These are the results of correlating (pearson correlation) non-verbal recognition performance' ...
+    'with verbal recognition performance:'])
+These are the results of correlating (pearson correlation) non-verbal recognition performancewith verbal recognition performance:
+disp('The first item is for sighted. The second is for blind.')
+The first item is for sighted. The second is for blind.
+%Q: Are "items" rows? Are columns % positions correct (left) and % letters correct (right)? What p value are we using for significance?
+disp('Rho:')
+Rho:
+disp(num2str(rhoRecog))
+0.22705     0.25215
+disp('P-values:')
+P-values:
+disp(num2str(pRecog))
+0.32228     0.28351
+
+if writeToFile
+    diary off 
+end
